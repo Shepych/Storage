@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StorageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,10 +19,31 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('get/file', function () {
-    return 'Получаем файл';
-});
+Route::group(['middleware' => ['api_key']], function() {
+    Route::get('file/upload', function (Request $request) {
+        dd($_SERVER['DOCUMENT_ROOT']);
 
-Route::get('upload/file', function () {
-    return 'Заливаем файл';
+        # Создаём папку
+        Storage::disk('public')->makeDirectory('mods/' . $request->folder . '/' . $request->mod_id);
+    
+        \Illuminate\Support\Facades\DB::table('api_storage')->insert([
+            'name' => $request->folder,
+            'size' => $request->mod_id,
+            'type' => $request->attachment,
+        ]);
+    
+        # Загружаем файл
+        move_uploaded_file($request->attachment, '/var/www/www-root/data/www/stalkerok.ru/storage/app/public/mods/' . $request->folder . '/' . $request->mod_id . '/' . $request->file_name);
+    
+        return response()->json([
+            'success' => true,
+            'ololo' => 'asfdodasf'
+        ]);
+    });
+
+    Route::get('file/get', function () {
+        return 'Получаем файл';
+    });
+    #Route::get('testing', [StorageController::class, 'index']);
+    #Route::post('upload', [StorageController::class, 'upload'])->name('upload');
 });
